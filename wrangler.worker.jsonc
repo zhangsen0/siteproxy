@@ -1,9 +1,12 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "siteproxy", // worker name
-  "main": "build/worker.js",
+  "main": "homepage_worker.js", // custom entry: bundled homepage + siteproxy
   "compatibility_date": "2025-07-23",
   "compatibility_flags": ["nodejs_compat"],
+  "rules": [
+    { "type": "Text", "globs": ["**/*.html"], "fallthrough": true }
+  ],
   "observability": {
     "enabled": true
   },
