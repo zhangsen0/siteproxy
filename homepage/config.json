@@ -1,0 +1,20 @@
+{
+  "title": "SiteProxy 导航",
+  "subtitle": "通过代理安全访问以下网站，或在上方搜索",
+  "searchEngine": {
+    "name": "Bing",
+    "url": "https/www.bing.com/search?q="
+  },
+  "sites": [
+    { "name": "Bing 搜索",     "url": "https/www.bing.com" },
+    { "name": "DuckDuckGo",    "url": "https/duckduckgo.com" },
+    { "name": "DuckDuckGo AI", "url": "https/duckduckgo.com/aichat" },
+    { "name": "维基百科",       "url": "https/zh.wikipedia.org/" },
+    { "name": "YouTube",       "url": "https/www.youtube.com/?gl=US" },
+    { "name": "X (Twitter)",   "url": "https/x.com/" },
+    { "name": "Telegram Web",  "url": "https/web.telegram.org/a/" },
+    { "name": "GitHub",        "url": "https/github.com" },
+    { "name": "纽约时报中文网", "url": "https/cn.nytimes.com/" },
+    { "name": "路透社",         "url": "https/www.reuters.com/" }
+  ]
+}
