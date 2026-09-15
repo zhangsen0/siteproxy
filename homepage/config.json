@@ -1,10 +1,13 @@
 {
   "title": "SiteProxy 导航",
-  "subtitle": "通过代理安全访问以下网站，或在上方搜索",
-  "searchEngine": {
-    "name": "Bing",
-    "url": "https/www.bing.com/search?q="
-  },
+  "subtitle": "输入网址直接访问，或选择搜索引擎进行搜索",
+  "searchEngines": [
+    { "name": "Bing",       "url": "https/www.bing.com/search?q=" },
+    { "name": "Google",     "url": "https/www.google.com/search?q=" },
+    { "name": "DuckDuckGo", "url": "https/duckduckgo.com/?q=" },
+    { "name": "百度",        "url": "https/www.baidu.com/s?wd=" }
+  ],
+  "defaultSearchEngine": "Bing",
   "sites": [
     { "name": "Bing 搜索",     "url": "https/www.bing.com" },
     { "name": "DuckDuckGo",    "url": "https/duckduckgo.com" },
