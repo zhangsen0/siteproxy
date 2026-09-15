@@ -6,7 +6,7 @@
 <title>SiteProxy</title>
 <!--
   页面模板：结构 + 样式。
-  所有内容（标题、站点列表、搜索引擎）来自 homepage/config.json，
+  所有内容（标题、搜索引擎、站点列表）来自 homepage/config.json，
   代理前缀由 Worker 在部署时注入，本文件无需修改即可工作。
 -->
 <style>
@@ -32,8 +32,19 @@
   main { width: 100%; max-width: 860px; }
   h1 { font-size: 28px; letter-spacing: 0.5px; }
   h1 span { color: var(--accent); }
-  .sub { color: var(--muted); margin: 6px 0 28px; font-size: 14px; }
-  form { display: flex; gap: 10px; margin-bottom: 32px; }
+  .sub { color: var(--muted); margin: 6px 0 24px; font-size: 14px; }
+
+  .bar { display: flex; gap: 10px; margin-bottom: 12px; }
+  select {
+    padding: 12px 10px;
+    font-size: 14px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--card);
+    color: var(--text);
+    cursor: pointer;
+    outline: none;
+  }
   input {
     flex: 1;
     padding: 12px 16px;
@@ -54,8 +65,16 @@
     background: var(--accent);
     color: #fff;
     cursor: pointer;
+    white-space: nowrap;
   }
   button:hover { filter: brightness(1.1); }
+  button.ghost {
+    background: var(--card);
+    color: var(--accent);
+    border: 1px solid var(--border);
+  }
+  .hint { font-size: 12px; color: var(--muted); margin: 4px 2px 28px; }
+
   .grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
@@ -85,10 +104,19 @@
   <h1 id="page-title"></h1>
   <p class="sub" id="page-subtitle"></p>
 
-  <form id="search-form">
+  <!-- 搜索：引擎可选 -->
+  <form class="bar" id="search-form">
+    <select id="engine"></select>
     <input id="q" type="text" placeholder="输入关键词，回车搜索…" autocomplete="off">
-    <button type="submit" id="search-btn"></button>
+    <button type="submit">搜索</button>
   </form>
+
+  <!-- 任意网址直达 -->
+  <form class="bar" id="goto-form">
+    <input id="site" type="text" placeholder="输入任意网址直接访问，如 www.youtube.com" autocomplete="off">
+    <button type="submit" class="ghost">前往</button>
+  </form>
+  <p class="hint">网址可带或不带 https://，将自动通过代理打开</p>
 
   <div id="sites" class="grid"></div>
 
@@ -103,24 +131,59 @@ function toProxyUrl(u) {
   return PAGE_CONFIG.proxyPrefix.replace(/\/?$/, '/') + u;
 }
 
+// "https://host/path?q=" -> "https/host/path?q="（代理路径格式）
+function toProxyPath(absoluteUrl) {
+  try {
+    const u = new URL(absoluteUrl);
+    const path = (u.pathname === '/' ? '' : u.pathname) + u.search + u.hash;
+    return u.protocol.replace(':', '') + '/' + u.host + path;
+  } catch (e) {
+    return null;
+  }
+}
+
 // 标题与副标题
 document.title = PAGE_CONFIG.title;
 const titleEl = document.getElementById('page-title');
-const main = /SiteProxy/i.exec(PAGE_CONFIG.title);
+const m = /SiteProxy/i.exec(PAGE_CONFIG.title);
 titleEl.textContent = PAGE_CONFIG.title;
-if (main) {
+if (m) {
   titleEl.innerHTML = '';
-  titleEl.append(PAGE_CONFIG.title.slice(0, main.index));
+  titleEl.append(PAGE_CONFIG.title.slice(0, m.index));
   const span = document.createElement('span');
-  span.textContent = main[0];
-  titleEl.append(span, PAGE_CONFIG.title.slice(main.index + main[0].length));
+  span.textContent = m[0];
+  titleEl.append(span, PAGE_CONFIG.title.slice(m.index + m[0].length));
 }
 document.getElementById('page-subtitle').textContent = PAGE_CONFIG.subtitle || '';
 
-// 搜索引擎
-const se = PAGE_CONFIG.searchEngine || {};
-document.getElementById('search-btn').textContent = se.name ? (se.name + ' 搜索') : '搜索';
-document.getElementById('q').placeholder = '输入关键词，回车用 ' + (se.name || '搜索引擎') + ' 搜索…';
+// 搜索引擎下拉
+const engines = PAGE_CONFIG.searchEngines || [];
+const engineSel = document.getElementById('engine');
+for (const e of engines) {
+  const opt = document.createElement('option');
+  opt.value = e.url;
+  opt.textContent = e.name;
+  engineSel.appendChild(opt);
+}
+const def = engines.find(e => e.name === PAGE_CONFIG.defaultSearchEngine) || engines[0];
+if (def) engineSel.value = def.url;
+document.getElementById('q').placeholder = '输入关键词，用 ' + (def ? def.name : '搜索引擎') + ' 搜索…';
+
+document.getElementById('search-form').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const q = document.getElementById('q').value.trim();
+  if (q && engineSel.value) location.href = toProxyUrl(engineSel.value) + encodeURIComponent(q);
+});
+
+// 任意网址直达
+document.getElementById('goto-form').addEventListener('submit', (e) => {
+  e.preventDefault();
+  let v = document.getElementById('site').value.trim();
+  if (!v) return;
+  if (!/^https?:\/\//i.test(v)) v = 'https://' + v;
+  const p = toProxyPath(v);
+  if (p) location.href = toProxyUrl(p);
+});
 
 // 站点导航
 const grid = document.getElementById('sites');
@@ -134,13 +197,6 @@ for (const s of (PAGE_CONFIG.sites || [])) {
   a.querySelector('.host').textContent = host;
   grid.appendChild(a);
 }
-
-// 搜索跳转
-document.getElementById('search-form').addEventListener('submit', (e) => {
-  e.preventDefault();
-  const q = document.getElementById('q').value.trim();
-  if (q && se.url) location.href = toProxyUrl(se.url) + encodeURIComponent(q);
-});
 </script>
 </body>
 </html>
